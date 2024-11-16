@@ -104,11 +104,15 @@ def get_components_by_ids(root: Block, ids: List[int]):
 def detect_control_net(root: gr.Blocks, submit: gr.Button):
     UiControlNetUnit = None
 
-    dependencies: List[dict] = [
-        x
-        for x in root.default_config.get_config().get("dependencies")
-        if x["targets"][0][1] == "click" and submit._id == x["targets"][0][0]
-    ]
+    if not hasattr(root, "default_config"):
+        dependencies: List[dict] = [
+            x for x in root.dependencies if x["trigger"] == "click" and submit._id in x["targets"]
+        ]
+    else:
+        def_dependencies = root.default_config.get_config().get("dependencies")
+        dependencies: List[dict] = [
+             x for x in def_dependencies if x["targets"][0][1] == "click" and submit._id == x["targets"][0][0]
+        ]
     for d in dependencies:
         if len(d["outputs"]) == 1:
             outputs = get_components_by_ids(root, d["outputs"])

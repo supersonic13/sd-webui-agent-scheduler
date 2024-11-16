@@ -147,10 +147,15 @@ class Script(scripts.Script):
         if generate is None or generate._id is None:
             return
         is_img2img = self.is_img2img
-        def_dependencies = root.default_config.get_config().get("dependencies")
-        dependencies: List[dict] = [
-             x for x in def_dependencies if x["targets"][0][1] == "click" and generate._id == x["targets"][0][0]
-        ]
+        if not hasattr(root, "default_config"):
+            dependencies: List[dict] = [
+                x for x in root.dependencies if x["trigger"] == "click" and generate._id in x["targets"]
+            ]
+        else:
+            def_dependencies = root.default_config.get_config().get("dependencies")
+            dependencies: List[dict] = [
+                 x for x in def_dependencies if x["targets"][0][1] == "click" and generate._id == x["targets"][0][0]
+            ]
 
 
         dependency: dict = None
@@ -174,9 +179,14 @@ class Script(scripts.Script):
 
             fn_block = None
             for key in root.fns:
-                if compare_components_with_ids(root.fns[key].inputs, dependency["inputs"]) == True:
-                    fn_block = root.fns[key]
-                    break
+                if not isinstance(key, (str, int)):
+                    if compare_components_with_ids(key.inputs, dependency["inputs"]):
+                        fn_block = key
+                        break
+                else:
+                    if compare_components_with_ids(root.fns[key].inputs, dependency["inputs"]) == True:
+                        fn_block = root.fns[key]
+                        break
 
             # fn_block = next(fn for fn in root.fns if compare_components_with_ids(fn.inputs, dependency["inputs"]))
             fn = self.wrap_register_ui_task()

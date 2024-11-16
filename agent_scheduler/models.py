@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional, List, Any, Dict
-from pydantic import ConfigDict, BaseModel, Field
+from pydantic import ConfigDict, BaseModel, Field, VERSION
+ISV1 = VERSION.startswith("1")
 
 from modules import sd_samplers
 from modules.api.models import (
@@ -70,19 +71,20 @@ class Txt2ImgApiTaskArgs(StableDiffusionTxt2ImgProcessingAPI):
 
     # TODO[pydantic]: The `Config` class inherits from another class, please create the `model_config` manually.
     # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
-    # class Config(StableDiffusionTxt2ImgProcessingAPI.__config__):
-    #     @staticmethod
-    #     def schema_extra(schema: Dict[str, Any], model) -> None:
-    #         props = schema.get("properties", {})
-    #         props.pop("send_images", None)
-    #         props.pop("save_images", None)
-    
-    def my_schema_extra(schema: Dict[str, Any]) -> None:
-            props = schema.get("properties", {})
-            props.pop("send_images", None)
-            props.pop("save_images", None)
-            # return props
-    model_config = ConfigDict(json_schema_extra=my_schema_extra,)
+    if ISV1:
+        class Config(StableDiffusionTxt2ImgProcessingAPI.__config__):
+            @staticmethod
+            def schema_extra(schema: Dict[str, Any], model) -> None:
+                props = schema.get("properties", {})
+                props.pop("send_images", None)
+                props.pop("save_images", None)
+    else:
+        def my_schema_extra(schema: Dict[str, Any]) -> None:
+                props = schema.get("properties", {})
+                props.pop("send_images", None)
+                props.pop("save_images", None)
+                # return props
+        model_config = ConfigDict(json_schema_extra=my_schema_extra,)
     
 
 
@@ -103,21 +105,22 @@ class Img2ImgApiTaskArgs(StableDiffusionImg2ImgProcessingAPI):
         title="Callback URL",
         description="The callback URL to send the result to.",
     )
-
-    def my_schema_extra(schema: Dict[str, Any]) -> None:
-            props = schema.get("properties", {})
-            props.pop("send_images", None)
-            props.pop("save_images", None)
-    model_config = ConfigDict(json_schema_extra=my_schema_extra,)
-
+    
     # TODO[pydantic]: The `Config` class inherits from another class, please create the `model_config` manually.
     # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
-    # class Config(StableDiffusionImg2ImgProcessingAPI.__config__):
-    #     @staticmethod
-    #     def schema_extra(schema: Dict[str, Any], model) -> None:
-    #         props = schema.get("properties", {})
-    #         props.pop("send_images", None)
-    #         props.pop("save_images", None)
+    if ISV1:
+        class Config(StableDiffusionImg2ImgProcessingAPI.__config__):
+            @staticmethod
+            def schema_extra(schema: Dict[str, Any], model) -> None:
+                props = schema.get("properties", {})
+                props.pop("send_images", None)
+                props.pop("save_images", None)
+    else:
+        def my_schema_extra(schema: Dict[str, Any]) -> None:
+                props = schema.get("properties", {})
+                props.pop("send_images", None)
+                props.pop("save_images", None)
+        model_config = ConfigDict(json_schema_extra=my_schema_extra,)
     
 
 
@@ -136,7 +139,11 @@ class QueueStatusResponse(BaseModel):
     #         props.pop("save_images", None)
     # TODO[pydantic]: The following keys were removed: `json_encoders`.
     # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
-    model_config = ConfigDict(json_encoders={datetime: lambda dt: int(dt.timestamp() * 1e3)})
+    if ISV1:
+        class Config:
+            json_encoders = {datetime: lambda dt: int(dt.timestamp() * 1e3)}
+    else:
+        model_config = ConfigDict(json_encoders={datetime: lambda dt: int(dt.timestamp() * 1e3)})
 
 
 class HistoryResponse(BaseModel):
@@ -144,7 +151,11 @@ class HistoryResponse(BaseModel):
     total: int = Field(title="Task count")
     # TODO[pydantic]: The following keys were removed: `json_encoders`.
     # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
-    model_config = ConfigDict(json_encoders={datetime: lambda dt: int(dt.timestamp() * 1e3)})
+    if ISV1:
+        class Config:
+            json_encoders = {datetime: lambda dt: int(dt.timestamp() * 1e3)}
+    else:
+        model_config = ConfigDict(json_encoders={datetime: lambda dt: int(dt.timestamp() * 1e3)})
 
 
 class UpdateTaskArgs(BaseModel):
